@@ -3,563 +3,607 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema Solar Interactivo</title>
+    <title>Sistema Solar Interactivo (Velocidad 4x)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            margin: 0;
-            overflow: hidden; /* Prevent scrollbars */
-            background-color: #000000; /* Deep space black */
-            color: #ffffff;
             font-family: 'Inter', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            overflow: hidden;
         }
-        #solarSystemCanvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            background: radial-gradient(ellipse at center, #1a1a2a 0%, #000010 70%, #000000 100%); /* Subtle space gradient */
-        }
-        #infoPanelContainer {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5); /* Dim overlay */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        #infoPanelContainer.visible {
-            opacity: 1;
-            visibility: visible;
-        }
-        #infoPanel {
-            background-color: rgba(10, 20, 40, 0.95); /* Dark blueish, semi-transparent */
-            border: 1px solid #304070;
-            border-radius: 12px; /* More rounded */
-            padding: 25px;
-            max-width: 90%;
-            width: 650px; /* Increased width */
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 30px rgba(0, 120, 255, 0.3); /* Glow effect */
-            color: #e0e0ff; /* Light lavender text */
-            position: relative; /* For close button positioning */
-        }
-        #infoPanel h2 {
-            margin-top: 0;
-            color: #80a0ff; /* Brighter blue for heading */
-            font-size: 1.75rem; /* Larger title */
-            border-bottom: 1px solid #304070;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-        #infoPanel p, #infoPanel li {
-            line-height: 1.7; /* Increased line height */
-            font-size: 1rem; /* Standard text size */
-            margin-bottom: 10px;
-        }
-        #infoPanel strong {
-            color: #a0c0ff; /* Highlight for strong text */
-        }
-        #infoMoonsList {
-            list-style-type: disc;
-            padding-left: 20px;
-        }
-        #infoMoonsList li { /* Style for clickable moon names in panel */
+        .celestial-body {
+            border-radius: 50%;
             cursor: pointer;
-            color: #a0c0ff;
-            transition: text-decoration 0.2s ease;
-        }
-        #infoMoonsList li:hover {
-            text-decoration: underline;
-        }
-        #closeButton {
             position: absolute;
-            top: 15px;
-            right: 15px;
-            background: transparent;
-            border: none;
-            color: #a0c0ff;
-            font-size: 28px; /* Larger close button */
-            cursor: pointer;
-            transition: color 0.2s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px;
+            z-index: 10; /* Planetas por defecto */
         }
-        #closeButton:hover {
-            color: #ffffff;
+        .celestial-body:hover {
+            transform: scale(1.15);
+            z-index: 20;
         }
-        /* Custom scrollbar for info panel */
-        #infoPanel::-webkit-scrollbar {
-            width: 8px;
+        .sun {
+            background-color: #FFD700;
+            box-shadow: 0 0 30px 10px #FFD700, 0 0 50px 20px #FFA500;
+            z-index: 5;
         }
-        #infoPanel::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.1);
-            border-radius: 10px;
+        .mercury { background-color: #A9A9A9; }
+        .venus { background-color: #F5DEB3; }
+        .earth { background-color: #4682B4; }
+        .mars { background-color: #CD5C5C; }
+        .jupiter { background-color: #DEB887; }
+        .saturn { background-color: #F0E68C; }
+        .uranus { background-color: #ADD8E6; }
+        .neptune { background-color: #0000CD; }
+
+        .moon {
+            position: absolute;
+            border-radius: 50%;
+            background-color: #CCCCCC;
+            z-index: 15;
+            pointer-events: none !important; /* Todas las lunas no son clickeables */
         }
-        #infoPanel::-webkit-scrollbar-thumb {
-            background: #304070;
-            border-radius: 10px;
+        /* Colores específicos para lunas */
+        #luna { background-color: #E0E0E0; }
+        #fobos { background-color: #777777; }
+        #deimos { background-color: #999999; }
+        #io { background-color: #FFFACD; }
+        #europa { background-color: #ADD8E6; }
+        #ganimedes { background-color: #D2B48C; }
+        #calisto { background-color: #8B4513; }
+        #titan { background-color: #FFA500; }
+        #esfera-buga {
+            background-color: #8D99AE; /* Gris metálico */
         }
-        #infoPanel::-webkit-scrollbar-thumb:hover {
-            background: #405080;
+
+
+        #info-panel {
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
         }
+        #info-panel.hidden {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            pointer-events: none;
+        }
+        .orbit-path {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            pointer-events: none;
+            z-index: 1;
+        }
+        .stars {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            z-index: -2;
+        }
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 2s infinite alternate;
+        }
+        @keyframes twinkle {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.8; }
+        }
+
+        /* Responsividad */
+        :root {
+            /* Móvil */
+            --sun-size: 50px;
+            --mercury-size: 8px; --mercury-orbit: 40px;
+            --venus-size: 12px; --venus-orbit: 65px;
+            --earth-size: 13px; --earth-orbit: 90px;
+                --luna-size: 3px; --luna-orbit: 10px;
+                --esfera-buga-size: 4px; --esfera-buga-orbit: 15px;
+            --mars-size: 10px; --mars-orbit: 120px;
+                --fobos-size: 2px; --fobos-orbit: 7px;
+                --deimos-size: 1.5px; --deimos-orbit: 9px;
+            --jupiter-size: 25px; --jupiter-orbit: 160px;
+                --io-size: 3.5px; --io-orbit: 15px;
+                --europa-size: 3px; --europa-orbit: 18px;
+                --ganimedes-size: 4px; --ganimedes-orbit: 21px;
+                --calisto-size: 3.5px; --calisto-orbit: 24px;
+            --saturn-size: 22px; --saturn-orbit: 210px;
+                --saturn-ring-width: 35px; --saturn-ring-height: 8px;
+                --titan-size: 4px; --titan-orbit: 16px;
+                --rea-size: 2.5px; --rea-orbit: 19px;
+                --mimas-size: 1px; --mimas-orbit: 13px;
+                --encelado-size: 1.5px; --encelado-orbit: 14px;
+            --uranus-size: 18px; --uranus-orbit: 255px;
+                --titania-size: 3px; --titania-orbit: 14px;
+                --oberon-size: 2.8px; --oberon-orbit: 17px;
+            --neptune-size: 17px; --neptune-orbit: 290px;
+                --triton-size: 3px; --triton-orbit: 13px;
+                --nereida-size: 1.5px; --nereida-orbit: 16px;
+        }
+
+        @media (min-width: 768px) {
+            :root {
+                --sun-size: 100px;
+                --mercury-size: 12px; --mercury-orbit: 80px;
+                --venus-size: 20px; --venus-orbit: 130px;
+                --earth-size: 22px; --earth-orbit: 180px;
+                    --luna-size: 6px; --luna-orbit: 20px;
+                    --esfera-buga-size: 7px; --esfera-buga-orbit: 28px;
+                --mars-size: 18px; --mars-orbit: 230px;
+                    --fobos-size: 3px; --fobos-orbit: 12px;
+                    --deimos-size: 2.5px; --deimos-orbit: 16px;
+                --jupiter-size: 45px; --jupiter-orbit: 300px;
+                    --io-size: 7px; --io-orbit: 30px;
+                    --europa-size: 6px; --europa-orbit: 36px;
+                    --ganimedes-size: 7px; --ganimedes-orbit: 42px;
+                    --calisto-size: 6px; --calisto-orbit: 48px;
+                --saturn-size: 40px; --saturn-orbit: 380px;
+                    --saturn-ring-width: 70px; --saturn-ring-height: 15px;
+                    --titan-size: 7px; --titan-orbit: 35px;
+                    --rea-size: 5px; --rea-orbit: 40px;
+                    --mimas-size: 2px; --mimas-orbit: 28px;
+                    --encelado-size: 3px; --encelado-orbit: 31px;
+                --uranus-size: 30px; --uranus-orbit: 450px;
+                    --titania-size: 6px; --titania-orbit: 28px;
+                    --oberon-size: 5.5px; --oberon-orbit: 33px;
+                --neptune-size: 28px; --neptune-orbit: 510px;
+                    --triton-size: 6px; --triton-orbit: 26px;
+                    --nereida-size: 3px; --nereida-orbit: 30px;
+            }
+            .celestial-body { font-size: 0.75rem; }
+        }
+
+        @media (min-width: 1024px) {
+            :root {
+                --sun-size: 120px;
+                --mercury-size: 15px; --mercury-orbit: 100px;
+                --venus-size: 25px; --venus-orbit: 160px;
+                --earth-size: 28px; --earth-orbit: 220px;
+                    --luna-size: 8px; --luna-orbit: 25px;
+                    --esfera-buga-size: 9px; --esfera-buga-orbit: 35px;
+                --mars-size: 20px; --mars-orbit: 280px;
+                    --fobos-size: 4px; --fobos-orbit: 15px;
+                    --deimos-size: 3px; --deimos-orbit: 20px;
+                --jupiter-size: 55px; --jupiter-orbit: 360px;
+                    --io-size: 9px; --io-orbit: 40px;
+                    --europa-size: 8px; --europa-orbit: 48px;
+                    --ganimedes-size: 9px; --ganimedes-orbit: 56px;
+                    --calisto-size: 8px; --calisto-orbit: 64px;
+                --saturn-size: 50px; --saturn-orbit: 450px;
+                    --saturn-ring-width: 90px; --saturn-ring-height: 20px;
+                    --titan-size: 9px; --titan-orbit: 45px;
+                    --rea-size: 7px; --rea-orbit: 52px;
+                    --mimas-size: 3px; --mimas-orbit: 38px;
+                    --encelado-size: 4px; --encelado-orbit: 41px;
+                --uranus-size: 35px; --uranus-orbit: 530px;
+                    --titania-size: 7px; --titania-orbit: 35px;
+                    --oberon-size: 6.5px; --oberon-orbit: 40px;
+                --neptune-size: 33px; --neptune-orbit: 600px;
+                    --triton-size: 7px; --triton-orbit: 33px;
+                    --nereida-size: 4px; --nereida-orbit: 38px;
+            }
+             .celestial-body { font-size: 0.8rem; }
+        }
+
+        .sun { width: var(--sun-size); height: var(--sun-size); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        #mercury { width: var(--mercury-size); height: var(--mercury-size); }
+        #mercury-orbit.orbit-path { width: calc(var(--mercury-orbit) * 2); height: calc(var(--mercury-orbit) * 2); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        #venus { width: var(--venus-size); height: var(--venus-size); }
+        #venus-orbit.orbit-path { width: calc(var(--venus-orbit) * 2); height: calc(var(--venus-orbit) * 2); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        
+        #earth { width: var(--earth-size); height: var(--earth-size); }
+        #luna.moon { width: var(--luna-size); height: var(--luna-size); }
+        #esfera-buga.moon { width: var(--esfera-buga-size); height: var(--esfera-buga-size); }
+        #earth-orbit.orbit-path { width: calc(var(--earth-orbit) * 2); height: calc(var(--earth-orbit) * 2); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        
+        #mars { width: var(--mars-size); height: var(--mars-size); }
+        #fobos.moon { width: var(--fobos-size); height: var(--fobos-size); }
+        #deimos.moon { width: var(--deimos-size); height: var(--deimos-size); }
+        #mars-orbit.orbit-path { width: calc(var(--mars-orbit) * 2); height: calc(var(--mars-orbit) * 2); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+        #jupiter { width: var(--jupiter-size); height: var(--jupiter-size); }
+        #io.moon { width: var(--io-size); height: var(--io-size); }
+        #europa.moon { width: var(--europa-size); height: var(--europa-size); }
+        #ganimedes.moon { width: var(--ganimedes-size); height: var(--ganimedes-size); }
+        #calisto.moon { width: var(--calisto-size); height: var(--calisto-size); }
+        #jupiter-orbit.orbit-path { width: calc(var(--jupiter-orbit) * 2); height: calc(var(--jupiter-orbit) * 2); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+        #saturn { width: var(--saturn-size); height: var(--saturn-size); }
+        #saturn .ring {
+            position: absolute; width: var(--saturn-ring-width); height: var(--saturn-ring-height);
+            border: 2px solid rgba(200, 200, 180, 0.7); border-radius: 50%;
+            top: 50%; left: 50%; transform: translate(-50%, -50%) rotateX(70deg); z-index: -1;
+        }
+        #titan.moon { width: var(--titan-size); height: var(--titan-size); }
+        #rea.moon { width: var(--rea-size); height: var(--rea-size); }
+        #mimas.moon { width: var(--mimas-size); height: var(--mimas-size); }
+        #encelado.moon { width: var(--encelado-size); height: var(--encelado-size); }
+        #saturn-orbit.orbit-path { width: calc(var(--saturn-orbit) * 2); height: calc(var(--saturn-orbit) * 2); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+        #uranus { width: var(--uranus-size); height: var(--uranus-size); }
+        #titania.moon { width: var(--titania-size); height: var(--titania-size); }
+        #oberon.moon { width: var(--oberon-size); height: var(--oberon-size); }
+        #uranus-orbit.orbit-path { width: calc(var(--uranus-orbit) * 2); height: calc(var(--uranus-orbit) * 2); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        
+        #neptune { width: var(--neptune-size); height: var(--neptune-size); }
+        #triton.moon { width: var(--triton-size); height: var(--triton-size); }
+        #nereida.moon { width: var(--nereida-size); height: var(--nereida-size); }
+        #neptune-orbit.orbit-path { width: calc(var(--neptune-orbit) * 2); height: calc(var(--neptune-orbit) * 2); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
     </style>
 </head>
-<body>
-    <canvas id="solarSystemCanvas"></canvas>
-    <div id="infoPanelContainer">
-        <div id="infoPanel">
-            <button id="closeButton" aria-label="Cerrar panel de información">&times;</button>
-            <h2 id="infoName" class="text-2xl font-bold mb-2"></h2>
-            <p id="infoText" class="text-sm"></p>
-            <div id="infoMoonsContainer" class="mt-3" style="display:none;">
-                <h3 id="infoMoonsTitle" class="text-lg font-semibold">Lunas:</h3>
-                <ul id="infoMoonsList" class="list-disc pl-5 text-sm"></ul>
-            </div>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col justify-center items-center p-4 relative">
+
+    <div class="stars" id="stars-container"></div>
+
+    <div id="solar-system" class="relative w-full h-full max-w-[var(--neptune-orbit)*2.2] max-h-[var(--neptune-orbit)*2.2] aspect-square mx-auto">
+        <!-- Órbitas -->
+        <div id="mercury-orbit" class="orbit-path"></div>
+        <div id="venus-orbit" class="orbit-path"></div>
+        <div id="earth-orbit" class="orbit-path"></div>
+        <div id="mars-orbit" class="orbit-path"></div>
+        <div id="jupiter-orbit" class="orbit-path"></div>
+        <div id="saturn-orbit" class="orbit-path"></div>
+        <div id="uranus-orbit" class="orbit-path"></div>
+        <div id="neptune-orbit" class="orbit-path"></div>
+
+        <!-- Cuerpos Celestes -->
+        <div id="sun" class="celestial-body sun z-10">Sol</div>
+        <div id="mercury" class="celestial-body mercury"><span class="planet-name hidden md:inline">Mercurio</span></div>
+        <div id="venus" class="celestial-body venus"><span class="planet-name hidden md:inline">Venus</span></div>
+        
+        <div id="earth" class="celestial-body earth">
+            <span class="planet-name hidden md:inline">Tierra</span>
+            <div id="luna" class="moon"></div>
+            <div id="esfera-buga" class="moon"></div>
+        </div>
+        
+        <div id="mars" class="celestial-body mars">
+            <span class="planet-name hidden md:inline">Marte</span>
+            <div id="fobos" class="moon"></div>
+            <div id="deimos" class="moon"></div>
+        </div>
+
+        <div id="jupiter" class="celestial-body jupiter">
+            <span class="planet-name hidden md:inline">Júpiter</span>
+            <div id="io" class="moon"></div>
+            <div id="europa" class="moon"></div>
+            <div id="ganimedes" class="moon"></div>
+            <div id="calisto" class="moon"></div>
+        </div>
+        
+        <div id="saturn" class="celestial-body saturn">
+            <div class="ring"></div>
+            <span class="planet-name hidden md:inline">Saturno</span>
+            <div id="titan" class="moon"></div>
+            <div id="rea" class="moon"></div>
+            <div id="mimas" class="moon"></div>
+            <div id="encelado" class="moon"></div>
+        </div>
+        
+        <div id="uranus" class="celestial-body uranus">
+            <span class="planet-name hidden md:inline">Urano</span>
+            <div id="titania" class="moon"></div>
+            <div id="oberon" class="moon"></div>
+        </div>
+        
+        <div id="neptune" class="celestial-body neptune">
+            <span class="planet-name hidden md:inline">Neptuno</span>
+            <div id="triton" class="moon"></div>
+            <div id="nereida" class="moon"></div>
         </div>
     </div>
 
+    <div id="info-panel" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-800 bg-opacity-90 p-6 md:p-8 rounded-lg shadow-2xl z-50 w-11/12 sm:w-3/4 md:w-1/2 lg:w-1/3 max-w-lg backdrop-blur-sm">
+        <div class="flex justify-between items-center mb-4">
+            <h2 id="info-title" class="text-2xl md:text-3xl font-bold text-yellow-400"></h2>
+            <button id="close-info-button" class="text-gray-300 hover:text-white text-2xl">&times;</button>
+        </div>
+        <p id="info-description" class="text-gray-300 mb-3 text-sm md:text-base"></p>
+        <div id="info-facts-container">
+            <h3 class="text-lg font-semibold text-yellow-300 mb-1">Datos curiosos:</h3>
+            <ul id="info-facts" class="list-disc list-inside text-gray-300 space-y-1 text-sm md:text-base"></ul>
+        </div>
+        <!-- Nueva sección para información de lunas -->
+        <div id="moon-info-container" class="hidden mt-4">
+            <h3 class="text-lg font-semibold text-yellow-300 mb-2">Lunas y Satélites:</h3>
+            <ul id="moon-info-list" class="list-none space-y-3 text-sm md:text-base"></ul>
+        </div>
+    </div>
+    <div id="info-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40"></div>
+
     <script>
-        // --- Global Constants ---
-        const SPEED_MULTIPLIER = 16; 
-        const HOVER_ZOOM_FACTOR = 1.5; 
-        const HOVER_SLOWDOWN_FACTOR = 3; 
-
-        const STAR_BASE_DISPLAY_RADIUS = 35;
-        const PLANET_BASE_DISPLAY_RADIUS = 8;
-        const MOON_BASE_DISPLAY_RADIUS = 3;
-
-        const REAL_DAYS_PER_ANIM_SECOND_AT_1X = 2.5;
-
-        // --- Canvas and Context ---
-        const canvas = document.getElementById('solarSystemCanvas');
-        const ctx = canvas.getContext('2d');
-        let canvasWidth, canvasHeight;
-        let centerX, centerY;
-        let effectivePixelsPerAU;
-
-        // --- Animation State ---
-        let lastTime = 0;
-        let solarSystemObjects = [];
-        let hoveredObject = null;
-        let originalSpeeds = new Map();
-        let originalRadii = new Map();
-
-        // --- DOM Elements for Info Panel ---
-        const infoPanelContainer = document.getElementById('infoPanelContainer');
-        const infoPanel = document.getElementById('infoPanel');
-        const infoName = document.getElementById('infoName');
-        const infoText = document.getElementById('infoText');
-        const infoMoonsContainer = document.getElementById('infoMoonsContainer');
-        const infoMoonsList = document.getElementById('infoMoonsList');
-        const closeButton = document.getElementById('closeButton');
-
-        // --- Celestial Data ---
-        const celestialData = [
-            {
-                name: "Sol", type: "star", displaySizeFactor: 1, color: "#FFD700",
-                orbitalRadiusAU: 0, orbitalPeriodDays: 0,
-                info: "El Sol es la estrella en el centro de nuestro Sistema Solar. Es una esfera casi perfecta de plasma caliente, con un movimiento convectivo interno que genera un campo magnético a través de un proceso de dinamo. Es, con diferencia, la fuente de energía más importante para la vida en la Tierra.",
-                moonsData: []
+        // Datos de los cuerpos celestes
+        const celestialData = {
+            sun: {
+                name: 'Sol',
+                description: 'La estrella en el centro de nuestro sistema solar. Proporciona luz y calor esenciales para la vida en la Tierra.',
+                facts: ['Diámetro: 1.39 millones km', 'Temperatura superficial: ~5,500 °C', 'Edad: ~4.6 mil millones de años'],
+                orbitRadius: 0, speed: 0
             },
-            {
-                name: "Mercurio", type: "planet", displaySizeFactor: 0.5, color: "#A9A9A9",
-                orbitalRadiusAU: 0.39, orbitalPeriodDays: 88,
-                info: "Mercurio es el planeta más pequeño del Sistema Solar y el más cercano al Sol. Su órbita tiene la mayor excentricidad y su eje la menor inclinación. Gira sobre su eje una vez cada 59 días terrestres. No tiene satélites naturales.",
-                moonsData: []
+            mercury: {
+                name: 'Mercurio',
+                description: 'El planeta más pequeño y el más cercano al Sol. Tiene una superficie craterizada similar a la Luna.',
+                facts: ['Un año: 88 días terrestres', 'No tiene lunas', 'Temperaturas extremas: de -173°C a 427°C'],
+                orbitRadiusVar: '--mercury-orbit', speed: 0.0010 * 4
             },
-            {
-                name: "Venus", type: "planet", displaySizeFactor: 0.9, color: "#E6E6FA",
-                orbitalRadiusAU: 0.72, orbitalPeriodDays: 225,
-                info: "Venus es el segundo planeta desde el Sol. A veces se le llama el 'planeta hermano' de la Tierra debido a su tamaño y masa similares. Tiene la atmósfera más densa de los cuatro planetas terrestres, compuesta principalmente de dióxido de carbono. No tiene satélites naturales.",
-                moonsData: []
+            venus: {
+                name: 'Venus',
+                description: 'Similar en tamaño a la Tierra, pero con una atmósfera densa y tóxica que lo convierte en el planeta más caliente.',
+                facts: ['Rotación retrógrada', 'Un día es más largo que un año', 'Presión atmosférica 92 veces la de la Tierra'],
+                orbitRadiusVar: '--venus-orbit', speed: 0.0008 * 4
             },
-            {
-                name: "Tierra", type: "planet", displaySizeFactor: 1, color: "#6495ED",
-                orbitalRadiusAU: 1, orbitalPeriodDays: 365.25,
-                info: "La Tierra es el tercer planeta desde el Sol y el único objeto astronómico conocido por albergar vida. Aproximadamente el 29% de su superficie es tierra firme, mientras que el 71% restante está cubierto de agua. La atmósfera terrestre protege la vida de la radiación solar dañina.",
-                moonsData: [
-                    { name: "Luna", displaySizeFactor: 0.8, color: "#D3D3D3", moonOrbitFactor: 2.5, orbitalPeriodDays: 27.3, info: "La Luna es el único satélite natural de la Tierra. Es el quinto satélite más grande del Sistema Solar y el más grande en relación con el tamaño de su planeta. Su presencia estabiliza la inclinación axial de la Tierra y produce las mareas." }
-                ]
-            },
-            {
-                name: "Marte", type: "planet", displaySizeFactor: 0.7, color: "#FF6347",
-                orbitalRadiusAU: 1.52, orbitalPeriodDays: 687,
-                info: "Marte es el cuarto planeta desde el Sol y el segundo más pequeño del Sistema Solar. A menudo se le llama el 'Planeta Rojo' debido a la prevalencia de óxido de hierro en su superficie. Tiene casquetes polares, volcanes, cañones y un clima estacional.",
-                moonsData: [
-                    { name: "Fobos", displaySizeFactor: 0.5, color: "#8B4513", moonOrbitFactor: 2, orbitalPeriodDays: 0.319, info: "Fobos es la luna más grande y cercana de Marte. Orbita Marte más rápido de lo que Marte rota, por lo que sale por el oeste y se pone por el este." },
-                    { name: "Deimos", displaySizeFactor: 0.4, color: "#A0522D", moonOrbitFactor: 3, orbitalPeriodDays: 1.26, info: "Deimos es la luna más pequeña y externa de Marte. Tiene una superficie mucho más lisa que Fobos, cubierta de una gruesa capa de regolito." }
-                ]
-            },
-            {
-                name: "Júpiter", type: "planet", displaySizeFactor: 3.5, color: "#FFDEAD",
-                orbitalRadiusAU: 5.2, orbitalPeriodDays: 4333,
-                info: "Júpiter es el quinto planeta desde el Sol y el más grande del Sistema Solar. Es un gigante gaseoso cuya masa es más de dos veces y media la de todos los demás planetas juntos. Es conocido por su Gran Mancha Roja, una tormenta anticiclónica persistente.",
-                moonsData: [
-                    { name: "Ío", displaySizeFactor: 0.7, color: "#FFFFE0", moonOrbitFactor: 2.0, orbitalPeriodDays: 1.77, info: "Ío es la luna más interna de las cuatro lunas galileanas de Júpiter. Es el objeto geológicamente más activo del Sistema Solar, con más de 400 volcanes activos." },
-                    { name: "Europa", displaySizeFactor: 0.65, color: "#ADD8E6", moonOrbitFactor: 2.5, orbitalPeriodDays: 3.55, info: "Europa es la más pequeña de las cuatro lunas galileanas. Se cree que tiene un océano de agua líquida debajo de su superficie helada, lo que la convierte en un candidato para albergar vida extraterrestre." },
-                    { name: "Ganimedes", displaySizeFactor: 0.9, color: "#D2B48C", moonOrbitFactor: 3.0, orbitalPeriodDays: 7.15, info: "Ganimedes es la luna más grande de Júpiter y del Sistema Solar, incluso más grande que el planeta Mercurio. Es la única luna conocida que tiene su propio campo magnético." },
-                    { name: "Calisto", displaySizeFactor: 0.85, color: "#A9A9A9", moonOrbitFactor: 3.8, orbitalPeriodDays: 16.69, info: "Calisto es la segunda luna más grande de Júpiter y la tercera más grande del Sistema Solar. Su superficie es la más antigua y más craterizada del Sistema Solar." }
-                ]
-            },
-            {
-                name: "Saturno", type: "planet", displaySizeFactor: 3, color: "#F0E68C",
-                orbitalRadiusAU: 9.58, orbitalPeriodDays: 10759,
-                info: "Saturno es el sexto planeta desde el Sol y el segundo más grande. Es un gigante gaseoso conocido por su extenso sistema de anillos, compuesto principalmente de partículas de hielo con una menor cantidad de escombros rocosos y polvo.",
-                moonsData: [
-                    { name: "Titán", displaySizeFactor: 0.8, color: "#FFA500", moonOrbitFactor: 2.5, orbitalPeriodDays: 15.95, info: "Titán es la luna más grande de Saturno y la segunda más grande del Sistema Solar. Es la única luna conocida con una atmósfera densa y el único objeto además de la Tierra donde se ha encontrado evidencia clara de cuerpos líquidos estables en la superficie." },
-                    { name: "Encélado", displaySizeFactor: 0.5, color: "#F5F5F5", moonOrbitFactor: 3.0, orbitalPeriodDays: 1.37, info: "Encélado es una luna helada de Saturno conocida por sus géiseres que expulsan vapor de agua y partículas de hielo desde su polo sur, lo que sugiere un océano subsuperficial." },
-                    { name: "Mimas", displaySizeFactor: 0.4, color: "#DCDCDC", moonOrbitFactor: 2.2, orbitalPeriodDays: 0.94, info: "Mimas es una luna de Saturno conocida por su enorme cráter de impacto, Herschel, que le da una apariencia similar a la Estrella de la Muerte de Star Wars." }
-                ]
-            },
-            {
-                name: "Urano", type: "planet", displaySizeFactor: 2, color: "#AFEEEE",
-                orbitalRadiusAU: 19.22, orbitalPeriodDays: 30689,
-                info: "Urano es el séptimo planeta desde el Sol. Tiene la tercera atmósfera planetaria más fría del Sistema Solar. Es único entre los planetas porque su eje de rotación está inclinado lateralmente, casi en su plano orbital.",
-                moonsData: [
-                    { name: "Miranda", displaySizeFactor: 0.5, color: "#E0FFFF", moonOrbitFactor: 2.5, orbitalPeriodDays: 1.41, info: "Miranda es la más pequeña y más interna de las cinco lunas redondas principales de Urano. Su superficie es un mosaico caótico de terrenos variados, lo que sugiere una historia geológica compleja." },
-                    { name: "Titania", displaySizeFactor: 0.6, color: "#F0FFFF", moonOrbitFactor: 3.5, orbitalPeriodDays: 8.71, info: "Titania es la luna más grande de Urano y la octava más grande del Sistema Solar. Su superficie está cubierta de numerosos cráteres y cañones."}
-                ]
-            },
-            {
-                name: "Neptuno", type: "planet", displaySizeFactor: 1.9, color: "#4682B4",
-                orbitalRadiusAU: 30.1, orbitalPeriodDays: 60182,
-                info: "Neptuno es el octavo y más distante planeta conocido del Sol. Es un gigante helado con los vientos más fuertes del Sistema Solar. Tiene un sistema de anillos tenues y oscuros.",
-                moonsData: [
-                    { name: "Tritón", displaySizeFactor: 0.7, color: "#B0E0E6", moonOrbitFactor: 3, orbitalPeriodDays: 5.88, info: "Tritón es la luna más grande de Neptuno y la única luna grande del Sistema Solar con una órbita retrógrada (orbita en dirección opuesta a la rotación de su planeta). Es uno de los objetos más fríos del Sistema Solar." }
-                ]
-            }
-        ];
-
-        // --- CelestialBody Class ---
-        class CelestialBody {
-            constructor(name, type, displaySizeFactor, color, primaryOrbitMetric, orbitalPeriodDays, parent = null, info = "Información no disponible.", moonsData = []) {
-                this.name = name;
-                this.type = type;
-                this.color = color;
-                this.primaryOrbitMetric = primaryOrbitMetric; 
-                this.orbitalPeriodDays = orbitalPeriodDays;
-                this.parent = parent;
-                this.info = info;
-                this.moonsData = moonsData; 
-                this.moons = []; 
-
-                this.baseDisplayRadius = this.calculateBaseDisplayRadius(type, displaySizeFactor);
-                this.displayRadius = this.baseDisplayRadius;
-
-                this.angle = Math.random() * 2 * Math.PI; 
-                this.baseAngularSpeed = this.calculateAngularSpeed();
-                this.currentAngularSpeed = this.baseAngularSpeed;
-
-                this.x = 0; this.y = 0;
-
-                this.initMoons();
-            }
-
-            calculateBaseDisplayRadius(type, factor) {
-                if (type === "star") return STAR_BASE_DISPLAY_RADIUS * factor;
-                if (type === "planet") return PLANET_BASE_DISPLAY_RADIUS * factor;
-                if (type === "moon") return MOON_BASE_DISPLAY_RADIUS * factor;
-                return 5;
-            }
-
-            calculateAngularSpeed() {
-                if (this.type === 'moon') {
-                    return 0;
-                }
-                if (!this.orbitalPeriodDays || this.orbitalPeriodDays === 0) return 0;
-                return (2 * Math.PI / this.orbitalPeriodDays) * REAL_DAYS_PER_ANIM_SECOND_AT_1X * SPEED_MULTIPLIER;
-            }
-
-            initMoons() {
-                this.moons = this.moonsData.map(moonData =>
-                    new CelestialBody(
-                        moonData.name, "moon", moonData.displaySizeFactor, moonData.color,
-                        moonData.moonOrbitFactor, 
-                        moonData.orbitalPeriodDays, this, moonData.info, [] 
-                    )
-                );
-            }
-
-            getScaledOrbitalRadius() {
-                if (this.type === 'moon' && this.parent) {
-                    return this.parent.displayRadius * this.primaryOrbitMetric;
-                } else if (this.type === 'planet') {
-                    return this.primaryOrbitMetric * effectivePixelsPerAU;
-                }
-                return 0; 
-            }
-
-            update(deltaTimeSeconds, parentX, parentY) {
-                if (this.currentAngularSpeed !== 0) {
-                    this.angle += this.currentAngularSpeed * deltaTimeSeconds;
-                    this.angle %= (2 * Math.PI);
-                }
-                
-                const scaledOrbitalRadius = this.getScaledOrbitalRadius();
-                this.x = parentX + scaledOrbitalRadius * Math.cos(this.angle);
-                this.y = parentY + scaledOrbitalRadius * Math.sin(this.angle);
-
-                this.moons.forEach(moon => moon.update(deltaTimeSeconds, this.x, this.y));
-            }
-
-            draw(ctx) {
-                if (this.parent) { 
-                    ctx.beginPath();
-                    ctx.strokeStyle = "rgba(100, 100, 120, 0.3)";
-                    ctx.lineWidth = 0.5;
-                    const orbitCenterX = this.parent.x;
-                    const orbitCenterY = this.parent.y;
-                    const scaledOrbitalRadius = this.getScaledOrbitalRadius();
-                    ctx.ellipse(orbitCenterX, orbitCenterY, scaledOrbitalRadius, scaledOrbitalRadius, 0, 0, 2 * Math.PI);
-                    ctx.stroke();
-                }
-
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.displayRadius, 0, 2 * Math.PI);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-
-                if (hoveredObject === this) {
-                    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                }
-
-                ctx.fillStyle = "rgba(220, 220, 255, 0.9)";
-                ctx.font = `${Math.max(8, this.displayRadius * 0.5 + 4)}px Inter`;
-                ctx.textAlign = "left";
-                ctx.fillText(this.name, this.x + this.displayRadius + 5, this.y + this.displayRadius / 2);
-
-                this.moons.forEach(moon => moon.draw(ctx));
-            }
-
-            isMouseOver(mouseX, mouseY) {
-                const dx = mouseX - this.x;
-                const dy = mouseY - this.y;
-                return (dx * dx + dy * dy) < (this.displayRadius * 1.2 * this.displayRadius * 1.2);
-            }
-        }
-
-        // --- Setup and Initialization ---
-        function setupCanvas() {
-            canvasWidth = window.innerWidth;
-            canvasHeight = window.innerHeight;
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
-            centerX = canvasWidth / 2;
-            centerY = canvasHeight / 2;
-
-            let maxAU = 0;
-            celestialData.forEach(p => {
-                if (p.type === 'planet' && p.orbitalRadiusAU > maxAU) maxAU = p.orbitalRadiusAU;
-            });
-            if (maxAU === 0) maxAU = 1; 
-            const minScreenDim = Math.min(canvasWidth, canvasHeight);
-
-            // Standard scaling to fit the outermost planet
-            let scaleToFitOuterSystem = (minScreenDim * 0.45) / maxAU;
-
-            // Ensure Mercury is outside the Sun's visual radius
-            const mercuryPlanetData = celestialData.find(p => p.name === "Mercurio");
-            const mercuryOrbitalAU = mercuryPlanetData ? mercuryPlanetData.orbitalRadiusAU : 0.39; // Default to 0.39 if not found
-            const mercuryRadiusPx = PLANET_BASE_DISPLAY_RADIUS * (mercuryPlanetData ? mercuryPlanetData.displaySizeFactor : 0.5);
-            
-            // Calculate minimum pixel distance for Mercury's orbit from Sun's center
-            const minOrbitalRadiusForMercuryPx = STAR_BASE_DISPLAY_RADIUS + mercuryRadiusPx + 10; // Sun's radius + Mercury's radius + 10px buffer
-            
-            // Calculate minimum scale (px/AU) needed for this visibility
-            let minScaleForMercuryVisibility = mercuryOrbitalAU > 0 ? (minOrbitalRadiusForMercuryPx / mercuryOrbitalAU) : scaleToFitOuterSystem;
-
-            // Use the larger of the two scales to ensure Mercury is visible,
-            // this might push outer planets further off-screen.
-            effectivePixelsPerAU = Math.max(scaleToFitOuterSystem, minScaleForMercuryVisibility);
-        }
-
-        function initSolarSystem() {
-            solarSystemObjects = celestialData.map(data =>
-                new CelestialBody(
-                    data.name, data.type, data.displaySizeFactor, data.color,
-                    data.orbitalRadiusAU, 
-                    data.orbitalPeriodDays,
-                    null, 
-                    data.info, data.moonsData
-                )
-            );
-            const sun = solarSystemObjects.find(obj => obj.type === 'star');
-            if (sun) {
-                solarSystemObjects.forEach(obj => {
-                    if (obj.type === 'planet') {
-                        obj.parent = sun; 
+            earth: {
+                name: 'Tierra',
+                description: 'Nuestro hogar, el único planeta conocido con vida. Tiene agua líquida en su superficie y una atmósfera rica en oxígeno.',
+                facts: ['71% de la superficie del planeta está cubierta por agua.', 'Su eje inclinado causa las estaciones del año.'],
+                orbitRadiusVar: '--earth-orbit', speed: 0.00065 * 4,
+                moons: {
+                    luna: { name: 'Luna', orbitRadiusVar: '--luna-orbit', speed: 0.04 * 4 },
+                    'esfera-buga': { name: 'ESFERA DE BUGA', orbitRadiusVar: '--esfera-buga-orbit', speed: (0.04 * 4) / 2 }
+                },
+                moonInfo: [
+                    {
+                        name: 'La Luna',
+                        description: 'Único satélite natural de la Tierra y el quinto más grande del sistema solar. Estabiliza la inclinación del eje de la Tierra y es responsable de las mareas.'
+                    },
+                    {
+                        name: 'ESFERA DE BUGA',
+                        description: `<strong>Resumen del suceso:</strong><br>
+                        A inicios de marzo de 2025, habitantes de Buga (Colombia) grabaron la caída de una extraña esfera metálica. El objeto, de unos 50 cm con símbolos grabados, fue recuperado y trasladado a México para su estudio por el ufólogo Jaime Maussan. El caso generó un intenso debate sobre su origen (extraterrestre, basura espacial o montaje) y sigue bajo investigación sin conclusiones definitivas.`
                     }
-                });
+                ]
+            },
+            mars: {
+                name: 'Marte',
+                description: 'Conocido como el "Planeta Rojo" por el óxido de hierro en su suelo. Tiene casquetes polares y el volcán más grande del sistema solar.',
+                facts: ['Monte Olimpo: 21.9 km de altura', 'Evidencia de agua líquida en el pasado'],
+                orbitRadiusVar: '--mars-orbit', speed: 0.0005 * 4,
+                moons: {
+                    fobos: { name: 'Fobos', orbitRadiusVar: '--fobos-orbit', speed: 0.07 * 4 },
+                    deimos: { name: 'Deimos', orbitRadiusVar: '--deimos-orbit', speed: 0.05 * 4 }
+                },
+                moonInfo: [
+                    { name: 'Fobos', description: 'La más grande y cercana de las dos lunas. Orbita tan cerca que se espera que se estrelle contra Marte o se rompa en un anillo en unos 50 millones de años.'},
+                    { name: 'Deimos', description: 'La más pequeña y externa de las lunas. Tiene una superficie mucho más suave que Fobos debido a una capa de regolito.'}
+                ]
+            },
+            jupiter: {
+                name: 'Júpiter',
+                description: 'El planeta más grande del sistema solar, un gigante gaseoso famoso por su Gran Mancha Roja.',
+                facts: ['Tiene al menos 95 lunas confirmadas', 'Un día dura solo ~10 horas terrestres', 'Campo magnético 14 veces más potente que el de la Tierra'],
+                orbitRadiusVar: '--jupiter-orbit', speed: 0.0003 * 4,
+                moons: {
+                    io: { name: 'Ío', orbitRadiusVar: '--io-orbit', speed: 0.08 * 4 },
+                    europa: { name: 'Europa', orbitRadiusVar: '--europa-orbit', speed: 0.06 * 4 },
+                    ganimedes: { name: 'Ganimedes', orbitRadiusVar: '--ganimedes-orbit', speed: 0.04 * 4 },
+                    calisto: { name: 'Calisto', orbitRadiusVar: '--calisto-orbit', speed: 0.03 * 4 }
+                },
+                moonInfo: [
+                    { name: 'Ío', description: 'El objeto con mayor actividad volcánica del sistema solar.'},
+                    { name: 'Europa', description: 'Su superficie de hielo podría ocultar un océano de agua líquida, un lugar prometedor para buscar vida.'},
+                    { name: 'Ganimedes', description: 'La luna más grande del sistema solar, incluso más grande que el planeta Mercurio.'},
+                    { name: 'Calisto', description: 'Tiene una de las superficies más antiguas y craterizadas del sistema solar.'}
+                ]
+            },
+            saturn: {
+                name: 'Saturno',
+                description: 'Famoso por sus espectaculares y extensos anillos, compuestos principalmente de partículas de hielo y roca.',
+                facts: ['Tiene al menos 146 lunas', 'Es menos denso que el agua', 'Vientos de hasta 1,800 km/h'],
+                orbitRadiusVar: '--saturn-orbit', speed: 0.0002 * 4,
+                moons: {
+                    titan: { name: 'Titán', orbitRadiusVar: '--titan-orbit', speed: 0.05 * 4 },
+                    rea: { name: 'Rea', orbitRadiusVar: '--rea-orbit', speed: 0.04 * 4 },
+                    mimas: { name: 'Mimas', orbitRadiusVar: '--mimas-orbit', speed: 0.1 * 4 },
+                    encelado: { name: 'Encélado', orbitRadiusVar: '--encelado-orbit', speed: 0.09 * 4 }
+                },
+                moonInfo: [
+                    { name: 'Titán', description: 'La segunda luna más grande del sistema solar, con una atmósfera densa y lagos de metano líquido.' },
+                    { name: 'Encélado', description: 'Una luna helada que expulsa géiseres de vapor de agua al espacio desde un océano subterráneo.' },
+                    { name: 'Mimas', description: 'Famosa por su enorme cráter de impacto, Herschel, que le da un aspecto similar a la "Estrella de la Muerte".' }
+                ]
+            },
+            uranus: {
+                name: 'Urano',
+                description: 'Un gigante de hielo con una atmósfera azul verdosa que rota de lado, con su eje casi paralelo al plano orbital.',
+                facts: ['Rota de lado (inclinación axial de 98°)', 'Tiene 27 lunas conocidas', 'Su atmósfera es la más fría del sistema solar (-224°C)'],
+                orbitRadiusVar: '--uranus-orbit', speed: 0.0001 * 4,
+                moons: {
+                    titania: { name: 'Titania', orbitRadiusVar: '--titania-orbit', speed: 0.045 * 4 },
+                    oberon: { name: 'Oberón', orbitRadiusVar: '--oberon-orbit', speed: 0.035 * 4 }
+                },
+                moonInfo: [
+                    { name: 'Titania', description: 'La luna más grande de Urano, con cañones y fallas en su superficie.' },
+                    { name: 'Oberón', description: 'La segunda luna más grande, con una superficie antigua y muy craterizada.' }
+                ]
+            },
+            neptune: {
+                name: 'Neptuno',
+                description: 'El planeta más distante del Sol (desde 2006). Otro gigante de hielo de color azul intenso con los vientos más fuertes del sistema solar.',
+                facts: ['Tiene 14 lunas conocidas', 'Los vientos superan los 2,000 km/h', 'Descubierto matemáticamente antes de ser observado'],
+                orbitRadiusVar: '--neptune-orbit', speed: 0.00005 * 4,
+                moons: {
+                    triton: { name: 'Tritón', orbitRadiusVar: '--triton-orbit', speed: 0.055 * 4 },
+                    nereida: { name: 'Nereida', orbitRadiusVar: '--nereida-orbit', speed: 0.02 * 4 }
+                },
+                moonInfo: [
+                    { name: 'Tritón', description: 'La luna grande más fría del sistema solar, con una órbita retrógrada (en dirección opuesta a la rotación de Neptuno).' },
+                    { name: 'Nereida', description: 'Tiene una de las órbitas más excéntricas de todas las lunas del sistema solar.' }
+                ]
             }
-        }
+        };
 
-        // --- Animation Loop ---
-        function animate(currentTime) {
-            const deltaTime = (currentTime - lastTime) / 1000;
-            lastTime = currentTime;
+        document.addEventListener('DOMContentLoaded', () => {
+            const solarSystemContainer = document.getElementById('solar-system');
+            const infoPanel = document.getElementById('info-panel');
+            const infoOverlay = document.getElementById('info-overlay');
+            const infoTitle = document.getElementById('info-title');
+            const infoDescription = document.getElementById('info-description');
+            const infoFactsContainer = document.getElementById('info-facts-container');
+            const infoFacts = document.getElementById('info-facts');
+            const moonInfoContainer = document.getElementById('moon-info-container');
+            const moonInfoList = document.getElementById('moon-info-list');
+            const closeInfoButton = document.getElementById('close-info-button');
+            const starsContainer = document.getElementById('stars-container');
 
-            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            const numStars = 250;
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                star.style.width = `${Math.random() * 2.5 + 0.5}px`;
+                star.style.height = star.style.width;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 2.5}s`;
+                starsContainer.appendChild(star);
+            }
 
-            solarSystemObjects.forEach(obj => {
-                if (obj.type === 'star') {
-                    obj.x = centerX; 
-                    obj.y = centerY;
-                    obj.update(deltaTime, centerX, centerY);
-                } else if (obj.parent && obj.parent.type === 'star') { 
-                    obj.update(deltaTime, obj.parent.x, obj.parent.y);
-                }
-            });
-
-            solarSystemObjects.forEach(obj => {
-                obj.draw(ctx);
-            });
-            
-            requestAnimationFrame(animate);
-        }
-
-        // --- Event Handlers ---
-        function handleMouseMove(event) {
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
-
-            let newHoveredCandidate = null;
-
-            // Pass 1: Check all moons first (topmost layer)
-            for (const systemObj of solarSystemObjects) {
-                if (systemObj.type === 'planet') {
-                    for (const moon of systemObj.moons) {
-                        if (moon.isMouseOver(mouseX, mouseY)) {
-                            newHoveredCandidate = moon;
-                            break; // Found a moon, it's the highest priority
-                        }
+            function showInfo(bodyId) {
+                const data = celestialData[bodyId];
+                if (data) {
+                    infoTitle.textContent = data.name;
+                    infoDescription.textContent = data.description;
+                    
+                    // Llenar datos curiosos
+                    infoFacts.innerHTML = '';
+                    if (data.facts && data.facts.length > 0) {
+                        infoFactsContainer.style.display = 'block';
+                        data.facts.forEach(fact => {
+                            const li = document.createElement('li');
+                            li.innerHTML = fact;
+                            infoFacts.appendChild(li);
+                        });
+                    } else {
+                        infoFactsContainer.style.display = 'none';
                     }
-                }
-                if (newHoveredCandidate) break; // If a moon was found, stop checking other planets for their moons
-            }
 
-            // Pass 2: If no moon hovered, check all planets
-            if (!newHoveredCandidate) {
-                for (const systemObj of solarSystemObjects) {
-                    if (systemObj.type === 'planet') {
-                        if (systemObj.isMouseOver(mouseX, mouseY)) {
-                            newHoveredCandidate = systemObj;
-                            break; // Found a planet
-                        }
+                    // Llenar información de lunas
+                    moonInfoList.innerHTML = '';
+                    if (data.moonInfo && data.moonInfo.length > 0) {
+                        moonInfoContainer.classList.remove('hidden');
+                        data.moonInfo.forEach(moon => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong class="text-yellow-200">${moon.name}:</strong><br><p class="pl-2 text-gray-400">${moon.description}</p>`;
+                            moonInfoList.appendChild(li);
+                        });
+                    } else {
+                        moonInfoContainer.classList.add('hidden');
                     }
+
+                    infoPanel.classList.remove('hidden');
+                    infoOverlay.classList.remove('hidden');
                 }
             }
 
-            // Pass 3: If no planet or moon hovered, check the Sun
-            if (!newHoveredCandidate) {
-                const sun = solarSystemObjects.find(obj => obj.type === 'star');
-                if (sun && sun.isMouseOver(mouseX, mouseY)) {
-                    newHoveredCandidate = sun;
-                }
+            function hideInfo() {
+                infoPanel.classList.add('hidden');
+                infoOverlay.classList.add('hidden');
             }
-            
-            // Apply hover effects (zoom, slowdown)
-            if (newHoveredCandidate !== hoveredObject) {
-                if (hoveredObject) { 
-                    if (originalSpeeds.has(hoveredObject) && hoveredObject.type !== 'moon') {
-                         hoveredObject.currentAngularSpeed = originalSpeeds.get(hoveredObject);
-                    } else if (hoveredObject.type !== 'moon') {
-                        hoveredObject.currentAngularSpeed = hoveredObject.baseAngularSpeed;
-                    }
-                    hoveredObject.displayRadius = originalRadii.get(hoveredObject) || hoveredObject.baseDisplayRadius;
-                    originalSpeeds.delete(hoveredObject);
-                    originalRadii.delete(hoveredObject);
-                }
-                if (newHoveredCandidate) { 
-                    if (newHoveredCandidate.type !== 'moon') { 
-                        originalSpeeds.set(newHoveredCandidate, newHoveredCandidate.currentAngularSpeed);
-                        newHoveredCandidate.currentAngularSpeed /= HOVER_SLOWDOWN_FACTOR;
-                    }
-                    originalRadii.set(newHoveredCandidate, newHoveredCandidate.displayRadius);
-                    newHoveredCandidate.displayRadius *= HOVER_ZOOM_FACTOR;
-                }
-                hoveredObject = newHoveredCandidate;
-            }
-            canvas.style.cursor = hoveredObject ? 'pointer' : 'default';
-        }
 
-        function handleClick(event) {
-            if (hoveredObject) {
-                showInfoPanel(hoveredObject);
-            }
-        }
-
-        // --- Info Panel Logic ---
-        function showInfoPanel(object) {
-            infoName.textContent = object.name;
-            infoText.textContent = object.info;
-            infoMoonsList.innerHTML = ''; 
-
-            if (object.type === 'planet' && object.moons.length > 0) {
-                infoMoonsContainer.style.display = 'block';
-                object.moons.forEach(moon => {
-                    const li = document.createElement('li');
-                    li.textContent = moon.name;
-                    li.onclick = (e) => {
+            Object.keys(celestialData).forEach(bodyId => {
+                const element = document.getElementById(bodyId);
+                if (element) {
+                     element.addEventListener('click', (e) => {
                         e.stopPropagation(); 
-                        showInfoPanel(moon); 
-                    };
-                    infoMoonsList.appendChild(li);
+                        showInfo(bodyId);
+                    });
+                }
+            });
+
+            closeInfoButton.addEventListener('click', hideInfo);
+            infoOverlay.addEventListener('click', hideInfo);
+
+            const rootStyles = getComputedStyle(document.documentElement);
+            let planetAngles = {}; 
+            let moonAngles = {};
+
+            function positionElements() {
+                const solarSystemRect = solarSystemContainer.getBoundingClientRect();
+                const systemCenterX = solarSystemRect.width / 2;
+                const systemCenterY = solarSystemRect.height / 2;
+
+                Object.keys(celestialData).forEach(planetId => {
+                    if (planetId === 'sun') return;
+
+                    const planetElement = document.getElementById(planetId);
+                    const planetData = celestialData[planetId];
+                    if (!planetElement || !planetData.orbitRadiusVar) return;
+
+                    const planetOrbitRadius = parseFloat(rootStyles.getPropertyValue(planetData.orbitRadiusVar).replace('px', ''));
+                    if (isNaN(planetOrbitRadius)) return;
+
+                    if (planetAngles[planetId] === undefined) {
+                        planetAngles[planetId] = Math.random() * 2 * Math.PI;
+                    }
+                    planetAngles[planetId] += planetData.speed;
+
+                    const planetSize = parseFloat(getComputedStyle(planetElement).width);
+                    
+                    const planetX = systemCenterX + planetOrbitRadius * Math.cos(planetAngles[planetId]) - (planetSize / 2);
+                    const planetY = systemCenterY + planetOrbitRadius * Math.sin(planetAngles[planetId]) - (planetSize / 2);
+                    
+                    planetElement.style.left = `${planetX}px`;
+                    planetElement.style.top = `${planetY}px`;
+
+                    if (planetData.moons) {
+                        Object.keys(planetData.moons).forEach(moonId => {
+                            const moonElement = document.getElementById(moonId);
+                            const moonData = planetData.moons[moonId];
+                            if (!moonElement || !moonData.orbitRadiusVar) return;
+
+                            const moonOrbitRadius = parseFloat(rootStyles.getPropertyValue(moonData.orbitRadiusVar).replace('px', ''));
+                            if(isNaN(moonOrbitRadius)) return;
+                            
+                            const moonKey = `${planetId}-${moonId}`;
+                            if (moonAngles[moonKey] === undefined) {
+                                moonAngles[moonKey] = Math.random() * 2 * Math.PI;
+                            }
+                            moonAngles[moonKey] += moonData.speed;
+
+                            const moonSize = parseFloat(getComputedStyle(moonElement).width);
+
+                            const moonX = (planetSize / 2) + moonOrbitRadius * Math.cos(moonAngles[moonKey]) - (moonSize / 2);
+                            const moonY = (planetSize / 2) + moonOrbitRadius * Math.sin(moonAngles[moonKey]) - (moonSize / 2);
+
+                            moonElement.style.left = `${moonX}px`;
+                            moonElement.style.top = `${moonY}px`;
+                        });
+                    }
                 });
-            } else {
-                infoMoonsContainer.style.display = 'none';
+                requestAnimationFrame(positionElements);
             }
-            infoPanelContainer.classList.add('visible');
-        }
+            
+            setTimeout(() => {
+                 requestAnimationFrame(positionElements);
+            }, 100);
 
-        function hideInfoPanel() {
-            infoPanelContainer.classList.remove('visible');
-        }
+            function resizeSolarSystem() {
+                const neptuneOrbitVal = parseFloat(rootStyles.getPropertyValue('--neptune-orbit').replace('px', ''));
+                const maxSize = neptuneOrbitVal * 2.3; 
 
-        // --- Event Listeners ---
-        window.addEventListener('DOMContentLoaded', () => {
-            setupCanvas();
-            initSolarSystem();
-            lastTime = performance.now(); 
-            requestAnimationFrame(animate);
-        });
-        window.addEventListener('resize', () => {
-            clearTimeout(window.resizeTimeout);
-            window.resizeTimeout = setTimeout(() => {
-                 setupCanvas();
-            }, 250);
-        });
-        canvas.addEventListener('mousemove', handleMouseMove);
-        canvas.addEventListener('click', handleClick);
-        closeButton.addEventListener('click', hideInfoPanel);
-        infoPanelContainer.addEventListener('click', (e) => { 
-            if (e.target === infoPanelContainer) {
-                hideInfoPanel();
+                const availableWidth = window.innerWidth * 0.95;
+                const availableHeight = window.innerHeight * 0.9;
+                
+                let newSize = Math.min(availableWidth, availableHeight, maxSize);
+                if (window.innerHeight < 500) newSize = Math.min(availableWidth, window.innerHeight * 0.8, maxSize);
+
+                solarSystemContainer.style.width = `${newSize}px`;
+                solarSystemContainer.style.height = `${newSize}px`;
             }
-        });
 
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            if (!lastTime && solarSystemObjects.length === 0) { 
-                 setupCanvas();
-                 initSolarSystem();
-                 lastTime = performance.now();
-                 requestAnimationFrame(animate);
-            }
-        }
+            window.addEventListener('resize', resizeSolarSystem);
+            resizeSolarSystem(); 
+
+        });
     </script>
 </body>
 </html>
-
